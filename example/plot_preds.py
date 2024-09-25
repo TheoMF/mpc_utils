@@ -7,7 +7,11 @@ import yaml
 import matplotlib.pyplot as plt
 from mpc_utils.mpc_utils import extract_plot_data_from_sim_data
 from mpc_utils.read_bags_utils import retrieve_duration_data, get_bag_topic_time
-from mpc_utils.plots import plot_mpc_iter_durations, plot_xyz_traj
+from mpc_utils.plots import (
+    plot_mpc_iter_durations,
+    plot_xyz_traj,
+    plot_2_mpc_iter_durations,
+)
 from mpc_utils.plot_tails import plot_tails, get_sim_data
 from agimus_controller.robot_model.panda_model import PandaRobotModel
 
@@ -34,30 +38,45 @@ model = robot_constructor.get_reduced_robot_model()
 robot.model = model
 with open("mpc_config.yaml", "r") as file:
     mpc_config = yaml.safe_load(file)
-with_ros = False
 
 bag_path = os.path.join(mpc_config["bag_directory"], mpc_config["bag_name"])
 solve_time, time = retrieve_duration_data(
     bag_path, mpc_config["mpc_solve_time_topic_name"]
 )
-plot_mpc_iter_durations("MPC iterations duration", solve_time, time)
+# plot_mpc_iter_durations("MPC iterations duration", solve_time, time)
 
-mpc_data = np.load(
-    mpc_config["bag_directory"] + "/mpc_data.npy", allow_pickle=True
+
+print("solve time mean ", np.mean(solve_time))
+
+
+mpc_data_replayed = np.load(
+    mpc_config["bag_directory"] + "/mpc_data_replayed.npy", allow_pickle=True
 ).item()
+"""
+plot_2_mpc_iter_durations(
+    "MPC iterations duration",
+    solve_time,
+    "online",
+    mpc_data_replayed["solve_time"][: solve_time.shape[0]],
+    "offline",
+    time,
+)
+plt.show()"""
 
-mpc_xs = np.array(mpc_data["preds_xs"])
-mpc_us = np.array(mpc_data["preds_us"])
-ctrl_refs = np.array(mpc_data["control_refs"])
-state_refs = np.array(mpc_data["state_refs"])
-translation_refs = np.array(mpc_data["translation_refs"])
+
+mpc_xs = np.array(mpc_data_replayed["preds_xs"])
+mpc_us = np.array(mpc_data_replayed["preds_us"])
+ctrl_refs = np.array(mpc_data_replayed["control_refs"])
+state_refs = np.array(mpc_data_replayed["state_refs"])
+translation_refs = np.array(mpc_data_replayed["translation_refs"])
 
 time = np.linspace(0, (translation_refs.shape[0] - 1) * 0.01, translation_refs.shape[0])
-
+"""
 if "vision_refs" in mpc_data.keys():
     vision_data = np.array(mpc_data["vision_refs"])
 
     plot_xyz_traj("vision pose ", time, vision_data)
+
 
 sim_data, sim_params = get_sim_data(
     mpc_xs, mpc_us, model, mpc_config, ctrl_refs, state_refs, translation_refs
@@ -73,7 +92,7 @@ plot_xyz_traj(
 )
 
 plt.show()
-
+"""
 plot_tails(
     mpc_xs,
     mpc_us,

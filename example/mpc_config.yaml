@@ -1,8 +1,8 @@
 bag_directory: "."
-bag_name: "rosbag_record_mpc_2024-09-09-11-58-25.bag"
+bag_name: "rosbag_record_mpc_2024-09-25-13-55-42.bag"
 dt_ocp: 0.01
 mpc_freq: 100
-nb_running_nodes: 99
+nb_running_nodes: 24
 endeff_name: "panda_hand_tcp"
 
 # optional parameter
