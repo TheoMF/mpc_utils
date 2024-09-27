@@ -2,6 +2,7 @@ import time
 import numpy as np
 import yaml
 import os
+import pinocchio as pin
 from mpc_utils.read_bags_utils import retrieve_data
 from agimus_controller.utils.ocp_analyzer import (
     return_cost_vectors,
@@ -32,26 +33,18 @@ class MPCReplay:
         for _ in range(300):  # 2 * mpc_params.horizon_size
             self.mpc_node.fill_buffer()
 
-    def create_mpc_data(self, solve_time):
-        xs, us = self.mpc_node.mpc.get_predictions()
-        x_ref, p_ref, u_ref = self.mpc_node.mpc.get_reference()
 
-        self.mpc_data["preds_xs"] = [xs]
-        self.mpc_data["preds_us"] = [us]
-        self.mpc_data["state_refs"] = [x_ref]
-        self.mpc_data["translation_refs"] = [p_ref]
-        self.mpc_data["control_refs"] = [u_ref]
-        self.mpc_data["solve_time"] = [solve_time]
-
-    def fill_mpc_data(self, solve_time):
-        xs, us = self.mpc_node.mpc.get_predictions()
-        x_ref, p_ref, u_ref = self.mpc_node.mpc.get_reference()
-        self.mpc_data["preds_xs"].append(xs)
-        self.mpc_data["preds_us"].append(us)
-        self.mpc_data["state_refs"].append(x_ref)
-        self.mpc_data["translation_refs"].append(p_ref)
-        self.mpc_data["control_refs"].append(u_ref)
-        self.mpc_data["solve_time"].append(solve_time)
+def get_se3_from_ros_pose(position, orientation):
+    pose_array = [
+        position.x,
+        position.y,
+        position.z,
+        orientation.w,
+        orientation.x,
+        orientation.y,
+        orientation.z,
+    ]
+    return pin.XYZQUATToSE3(pose_array)
 
 
 if __name__ == "__main__":
@@ -65,9 +58,17 @@ if __name__ == "__main__":
     mpc_params.save_predictions_and_refs = True
     x0s, _ = retrieve_data(bag_path, "/ctrl_mpc_linearized/ocp_x0", ["joint_state"])
     states, _ = retrieve_data(bag_path, "/ctrl_mpc_linearized/state", ["data"])
-    length = min(states.shape[0], x0s.shape[0])
+    poses, _ = retrieve_data(
+        bag_path, "/ctrl_mpc_linearized/happypose_pose", ["position"]
+    )
+    orientations, _ = retrieve_data(
+        bag_path, "/ctrl_mpc_linearized/happypose_pose", ["orientation"]
+    )
+    length = min(states.shape[0], x0s.shape[0], poses.shape[0])
+    print(f"len states {states.shape[0]} x0s {x0s.shape[0]} poses{poses.shape[0]}")
     x0s = x0s[:length]
     states = states[:length]
+    poses = poses[:length]
     mpc_replay = MPCReplay(mpc_params, bag_path)
     mpc_replay.mpc_node.state_machine = HPPStateMachine(states[0][0])
 
@@ -78,10 +79,12 @@ if __name__ == "__main__":
     solve_time = time.time() - start_solve_time
     mpc_replay.mpc_node.mpc_data["solve_time"] = [solve_time]
     mpc_replay.mpc_node
-
     for idx in range(1, x0s.shape[0]):
         mpc_replay.mpc_node.state_machine = HPPStateMachine(states[idx][0])
         x0 = np.concatenate([x0s[idx][0].position, x0s[idx][0].velocity])
+        mpc_replay.mpc_node.in_world_M_object = get_se3_from_ros_pose(
+            poses[idx][0], orientations[idx][0]
+        )
         start_solve_time = time.time()
         mpc_replay.mpc_node.solve(x0)
         print(
