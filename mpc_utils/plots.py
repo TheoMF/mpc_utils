@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 def plot_mpc_iter_durations(title, mpc_iter_durations, time):
@@ -12,6 +13,15 @@ def plot_mpc_iter_durations(title, mpc_iter_durations, time):
 def plot_2_mpc_iter_durations(
     title, mpc_iter_durations_1, label1, mpc_iter_durations_2, label2, time
 ):
+    length = min(
+        np.array(mpc_iter_durations_1).shape[0],
+        np.array(mpc_iter_durations_2).shape[0],
+        np.array(time).shape[0],
+    )
+    mpc_iter_durations_1 = mpc_iter_durations_1[:length]
+    mpc_iter_durations_2 = mpc_iter_durations_2[:length]
+    time = time[:length]
+
     fig, ax = plt.subplots(1, 1)
     fig.canvas.manager.set_window_title(title)
     ax.plot(time, mpc_iter_durations_1, label=label1)
