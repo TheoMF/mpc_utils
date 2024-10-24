@@ -99,16 +99,17 @@ plot_values(
 kkt_values = np.array(mpc_data["kkt_norm"])
 kkt_values = kkt_values[:, np.newaxis]
 time_kkt = np.linspace(0, (kkt_values.shape[0] - 1) * 0.01, kkt_values.shape[0])
+"""
 kkt_values_1000_it = np.array(mpc_data_2["kkt_norm"])
 
 kkt_values = np.c_[
     kkt_values[: kkt_values_1000_it.shape[0]], kkt_values_1000_it[:, np.newaxis]
-]
+]"""
 
 plot_values_on_same_fig(
     "kkt norm",
     kkt_values,
-    time_col[: kkt_values_1000_it.shape[0]],
+    time_col[: kkt_values.shape[0]],
     ["kkt 1000 iter, termination tol 1e-4 ", "kkt 100 iter, termination tol 1e-4"],
 )
 

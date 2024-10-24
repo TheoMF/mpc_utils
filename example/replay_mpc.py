@@ -119,8 +119,8 @@ if __name__ == "__main__":
             mpc_replay.mpc_node.in_world_M_object = get_se3_from_ros_pose(
                 poses[idx][0], orientations[idx][0]
             )
-
         mpc_replay.mpc_node.solve(x0)
+
         # print(
         #    f"idx {idx} state {HPPStateMachine(states[idx][0])} val {mpc_replay.mpc_node.pick_traj_last_point_is_near(x0)} "
         # )
@@ -142,27 +142,10 @@ if __name__ == "__main__":
             )
             idx_100_constraint = return_constraint_vector(
                 mpc_replay.mpc_node.mpc.ocp.solver
-            )
-        elif idx == 517:
-            solver_517 = mpc_replay.mpc_node.mpc.ocp.solver
-            idx_101_costs = return_cost_vectors(
-                mpc_replay.mpc_node.mpc.ocp.solver, weighted=True
-            )
-            idx_101_constraint = return_constraint_vector(
-                mpc_replay.mpc_node.mpc.ocp.solver
-            )
-        elif idx == 518:
-            solver_518 = mpc_replay.mpc_node.mpc.ocp.solver
-            idx_102_costs = return_cost_vectors(
-                mpc_replay.mpc_node.mpc.ocp.solver, weighted=True
-            )
-            idx_102_constraint = return_constraint_vector(
-                mpc_replay.mpc_node.mpc.ocp.solver
             )"""
         # if idx >= 516:
         #    breakpoint()
         # time.sleep(max(mpc_params.dt - solve_time, 0))
-
     np.save("mpc_data_replayed.npy", mpc_replay.mpc_node.mpc_data)
 
 
