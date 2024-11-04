@@ -1,11 +1,11 @@
 bag_directory: "."
-bag_name: "rosbag_record_mpc_2024-09-25-13-55-42.bag"
+bag_name: "rosbag_record_mpc_2024-10-31-15-00-49_send_to_theo.bag"
 dt_ocp: 0.01
 mpc_freq: 100
-nb_running_nodes: 24
+nb_running_nodes: 19
 endeff_name: "panda_hand_tcp"
 
 # optional parameter
 mpc_data_topic_name: "/ctrl_mpc_linearized/xu_solution"
-#T_sim: 2.5
+T_sim: 12.5
 mpc_solve_time_topic_name: "/ctrl_mpc_linearized/ocp_solve_time"
