@@ -41,13 +41,7 @@ def plot_tails(
         shape : np.ndarray[number of iteration of your mpc, 3]
     """
     sim_data, sim_params = get_sim_data(
-        mpc_xs,
-        mpc_us,
-        model,
-        mpc_config,
-        ctrl_refs=None,
-        state_refs=None,
-        translation_refs=None,
+        mpc_xs, mpc_us, model, mpc_config, ctrl_refs, state_refs, translation_refs
     )
     plot_data = extract_plot_data_from_sim_data(sim_data)
     pose = plot_data["lin_pos_ee_pred"][sim_data["N_sim"] - 1, 0, :]

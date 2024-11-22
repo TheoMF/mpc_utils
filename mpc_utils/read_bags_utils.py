@@ -53,6 +53,12 @@ def retrieve_duration_data(bag_path, topic):
     return duration_array, get_bag_topic_time(df.index)
 
 
+def retrieve_data(bag_path, topic, keys):
+    with AnyReader([Path(bag_path)]) as reader:
+        df = get_dataframe(reader, topic, keys)
+        return df.to_numpy(), get_bag_topic_time(df.index)
+
+
 def retrieve_topic_time(bag_path, topic, field):
     with AnyReader([Path(bag_path)]) as reader:
         df = get_dataframe(reader, topic, [field])
