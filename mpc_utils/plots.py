@@ -44,7 +44,7 @@ def plot_xyz_traj(title, time, translation_pose_data, translation_pose_data_ref=
         ax[i].set_ylabel(axes[i])
 
 
-def plot_values(title, values, time, labels=None, ylabels=None, semilogs=None):
+def plot_values(title, values, time, labels=None, ylabels=None, semilogs=None, ylimits=None):
     values = np.array(values)
     nb_plots = values.shape[1]
     fig, ax = plt.subplots(nb_plots, 1)
@@ -69,6 +69,8 @@ def plot_values(title, values, time, labels=None, ylabels=None, semilogs=None):
                 ax[i].plot(time, values[:, i])
             ax[i].legend()
             ax[i].set_xlabel("t (s)")
+            if ylimits is not None:
+                ax[i].set_ylim(ylimits[i][0],ylimits[i][1])
             if ylabels is not None:
                 ax[i].set_ylabel(ylabels)
 
@@ -104,8 +106,8 @@ def plot_values_on_same_fig(title, values, time, labels=None):
     fig.canvas.manager.set_window_title(title)
     for i in range(values.shape[1]):
         if labels is not None:
-            ax.semilogy(time, values[:, i], label=labels[i])
+            ax.plot(time, values[:, i], label=labels[i])
         else:
-            ax.semilogy(time, values[:, i])
+            ax.plot(time, values[:, i])
         ax.legend()
         ax.set_xlabel("t (s)")
