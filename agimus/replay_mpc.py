@@ -57,6 +57,23 @@ def get_solver_models_ref_and_weight(solver):
     print("terminal model ref ", terminal_model_grip_cost.cost.residual.reference)
     print("terminal model weight ", terminal_model_grip_cost.weight)
 
+def save_hpp_traj(bag_path):
+    poses, _ = retrieve_data(bag_path, "/hpp/target/position", ["data"])
+    vels, _ = retrieve_data(bag_path, "/hpp/target/velocity", ["data"])
+    accs, _ = retrieve_data(bag_path, "/hpp/target/acceleration", ["data"])
+    new_poses = np.zeros((poses.shape[0],poses[0][0].shape[0]))
+    new_vels = np.zeros((vels.shape[0],vels[0][0].shape[0]))
+    new_accs = np.zeros((accs.shape[0],accs[0][0].shape[0]))
+    for idx in range(new_poses.shape[0]):
+        new_poses[idx,:] = poses[idx][0]
+        new_vels[idx,:] = vels[idx][0]
+        new_accs[idx,:] = accs[idx][0]
+    dict = {}
+    dict["poses"] = new_poses
+    dict["vels"] = new_vels
+    dict["accs"] = new_accs
+    np.save("hpp_trajectory.npy",dict)
+
 
 if __name__ == "__main__":
     with open("mpc_config.yaml", "r") as file:
@@ -146,6 +163,7 @@ if __name__ == "__main__":
         #    breakpoint()
         # time.sleep(max(mpc_params.dt - solve_time, 0))
     np.save("mpc_data_replayed.npy", mpc_replay.mpc_node.mpc.mpc_data)
+    save_hpp_traj(bag_path)
 
 
 def compare_cost(cost_key, cost_dic, next_cost_dic):
@@ -160,3 +178,5 @@ def compare_constraint(constraint_key, constraint_dic, next_constraint_dic):
     dic[constraint_key] = constraint_dic[constraint_key][1:]
     dic["new " + constraint_key] = next_constraint_dic[constraint_key][:-1]
     plot_constraints_from_dic(dic)
+
+
