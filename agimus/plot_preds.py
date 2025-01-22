@@ -79,14 +79,19 @@ mpc_us = np.array(mpc_data["preds_us"])
 ctrl_refs = np.array(mpc_data["control_refs"])
 state_refs = np.array(mpc_data["state_refs"])
 translation_refs = np.array(mpc_data["translation_refs"])
-mpc_data_2pairs = np.load(
-    mpc_config["bag_directory"] + "/mpc_data_2collision_pairs_30_iter.npy",
+
+mpc_data_rep = np.load(
+    mpc_config["bag_directory"] + "/mpc_data_replayed.npy",
     allow_pickle=True,
 ).item()
-mpc_data_3pairs = np.load(
-    mpc_config["bag_directory"] + "/mpc_data_3collision_pairs_30_iter.npy",
-    allow_pickle=True,
-).item()
+
+mpc_xs_rep = np.array(mpc_data_rep["preds_xs"])
+mpc_us_rep = np.array(mpc_data_rep["preds_us"])
+ctrl_refs_rep = np.array(mpc_data_rep["control_refs"])
+state_refs_rep = np.array(mpc_data_rep["state_refs"])
+translation_refs_rep = np.array(mpc_data_rep["translation_refs"])
+
+
 # PLOT COMPUTATION TIME
 solve_time, time = retrieve_duration_data(
     bag_path, mpc_config["mpc_solve_time_topic_name"]
@@ -224,6 +229,25 @@ mpc_plots = MPCPlots(
     DT=0.01,
     ee_frame_name=mpc_config["endeff_name"],
     viewer=None,
+)
+
+#x0s diff
+expected_x0s = np.load(mpc_config["bag_directory"] + "/expected_x0s.npy")
+real_x0s = mpc_xs[1:,0,:]
+x0s_diff = np.abs(real_x0s - expected_x0s)
+plot_values(
+    "q0 diff",
+    x0s_diff[:,:7],
+    time_kkt[: x0s_diff.shape[0]],
+    [f"q{i}" for i in range(1,8)] ,
+    semilogs=[True]*14,
+)
+plot_values(
+    "dq0 diff",
+    x0s_diff[:,7:],
+    time_kkt[: x0s_diff.shape[0]],
+    [f"dq{i}" for i in range(1,8)],
+    semilogs=[True]*7,
 )
 
 # Plot predictions
