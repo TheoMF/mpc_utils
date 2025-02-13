@@ -44,7 +44,9 @@ def plot_xyz_traj(title, time, translation_pose_data, translation_pose_data_ref=
         ax[i].set_ylabel(axes[i])
 
 
-def plot_values(title, values, time, labels=None, ylabels=None, semilogs=None, ylimits=None):
+def plot_values(
+    title, values, time, labels=None, ylabels=None, semilogs=None, ylimits=None
+):
     values = np.array(values)
     nb_plots = values.shape[1]
     fig, ax = plt.subplots(nb_plots, 1)
@@ -70,7 +72,7 @@ def plot_values(title, values, time, labels=None, ylabels=None, semilogs=None, y
             ax[i].legend()
             ax[i].set_xlabel("t (s)")
             if ylimits is not None:
-                ax[i].set_ylim(ylimits[i][0],ylimits[i][1])
+                ax[i].set_ylim(ylimits[i][0], ylimits[i][1])
             if ylabels is not None:
                 ax[i].set_ylabel(ylabels)
 
@@ -111,3 +113,35 @@ def plot_values_on_same_fig(title, values, time, labels=None):
             ax.plot(time, values[:, i])
         ax.legend()
         ax.set_xlabel("t (s)")
+
+
+def concatenate_arrays_columns(array1, array2):
+    if len(array1.shape) == len(array2.shape):
+        array1 = array1[:, np.newaxis]
+    return np.c_[array1[: array2.shape[0]], array2[:, np.newaxis]]
+
+
+def concatenate_array_with_list_of_arrays(array, list_array):
+    for array_to_concatenate in list_array:
+        array = np.c_[
+            array[: array_to_concatenate.shape[0]], array_to_concatenate[:, np.newaxis]
+        ]
+    return array
+
+
+def plot_x0s_diff(expected_x0s, real_x0s, time):
+    x0s_diff = np.abs(real_x0s - expected_x0s)
+    plot_values(
+        "q0 diff",
+        x0s_diff[:, :7],
+        time[: x0s_diff.shape[0]],
+        [f"q{i}" for i in range(1, 8)],
+        semilogs=[True] * 14,
+    )
+    plot_values(
+        "dq0 diff",
+        x0s_diff[:, 7:],
+        time[: x0s_diff.shape[0]],
+        [f"dq{i}" for i in range(1, 8)],
+        semilogs=[True] * 7,
+    )
