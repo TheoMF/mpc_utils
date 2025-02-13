@@ -4,6 +4,7 @@ import yaml
 import os
 import pinocchio as pin
 from copy import deepcopy
+from mpc_utils.read_bags_utils import retrieve_duration_data
 from mpc_utils.read_bags_utils import retrieve_data
 from agimus_controller.utils.ocp_analyzer import (
     return_cost_vectors,
@@ -56,6 +57,33 @@ def get_solver_models_ref_and_weight(solver):
     print("last model weight ", last_model_grip_cost.weight)
     print("terminal model ref ", terminal_model_grip_cost.cost.residual.reference)
     print("terminal model weight ", terminal_model_grip_cost.weight)
+
+def save_hpp_traj(bag_path):
+    poses, _ = retrieve_data(bag_path, "/hpp/target/position", ["data"])
+    vels, _ = retrieve_data(bag_path, "/hpp/target/velocity", ["data"])
+    accs, _ = retrieve_data(bag_path, "/hpp/target/acceleration", ["data"])
+    new_poses = np.zeros((poses.shape[0],poses[0][0].shape[0]))
+    new_vels = np.zeros((vels.shape[0],vels[0][0].shape[0]))
+    new_accs = np.zeros((accs.shape[0],accs[0][0].shape[0]))
+    for idx in range(new_poses.shape[0]):
+        new_poses[idx,:] = poses[idx][0]
+        new_vels[idx,:] = vels[idx][0]
+        new_accs[idx,:] = accs[idx][0]
+    dict = {}
+    dict["poses"] = new_poses
+    dict["vels"] = new_vels
+    dict["accs"] = new_accs
+    np.save("hpp_trajectory.npy",dict)
+
+def get_next_state(solver, x,u0, dt):
+    """Get state at the next step by doing a crocoddyl integration."""
+    m = solver.problem.runningModels[0]
+    curr_dt = m.dt
+    m.dt = dt
+    d = m.createData()
+    m.calc(d, x, u0)
+    m.dt = curr_dt
+    return d.xnext.copy()
 
 
 if __name__ == "__main__":
@@ -110,15 +138,34 @@ if __name__ == "__main__":
     elif mpc_params.use_vision_simulated:
         mpc_replay.mpc_node.simulate_happypose_callback()
     mpc_replay.mpc_node
-    for idx in range(1, length):
+
+    mpc_data = np.load(
+        mpc_config["bag_directory"] + "/mpc_data.npy",
+        allow_pickle=True,
+    ).item()
+    solve_times, _ = retrieve_duration_data(
+    bag_path, mpc_config["mpc_solve_time_topic_name"]
+)
+    mpc_xs = np.array(mpc_data["preds_xs"])
+    mpc_us = np.array(mpc_data["preds_us"])
+    estimated_x0s_tilt =np.zeros((x0s.shape[0]+1,x0.shape[0]))
+    estimated_x0s_tilt[0,:] = x0
+    expected_x1s = np.zeros((x0s.shape[0],x0.shape[0]))
+    expected_x1s[0,:] = get_next_state(mpc_replay.mpc_node.mpc.ocp.solver, x0,mpc_us[0,0,:],0.01-solve_times[0])
+    estimated_x0s_tilt[1,:] = get_next_state(mpc_replay.mpc_node.mpc.ocp.solver, mpc_xs[1,0,:],mpc_us[0,0,:],solve_times[1])
+    for idx in range(1, length): #
         start_solve_time = time.time()
         mpc_replay.mpc_node.state_machine = HPPStateMachine(states[idx][0])
-        x0 = np.concatenate([x0s[idx][0].position, x0s[idx][0].velocity])
+        x0 = mpc_xs[idx,0,:] #np.concatenate([x0s[idx][0].position, x0s[idx][0].velocity])
         if mpc_params.use_vision:
             mpc_replay.mpc_node.in_world_M_object = get_se3_from_ros_pose(
                 poses[idx][0], orientations[idx][0]
             )
         mpc_replay.mpc_node.solve(x0)
+        expected_x1s[idx,:] = get_next_state(mpc_replay.mpc_node.mpc.ocp.solver, estimated_x0s_tilt[idx,:],mpc_us[idx,0,:],0.01-solve_times[idx])
+        if idx == length -1 :
+            continue
+        estimated_x0s_tilt[idx+1,:] = get_next_state(mpc_replay.mpc_node.mpc.ocp.solver, mpc_xs[idx+1,0,:],mpc_us[idx,0,:],solve_times[idx+1])
 
         # print(
         #    f"idx {idx} state {HPPStateMachine(states[idx][0])} val {mpc_replay.mpc_node.pick_traj_last_point_is_near(x0)} "
@@ -146,6 +193,8 @@ if __name__ == "__main__":
         #    breakpoint()
         # time.sleep(max(mpc_params.dt - solve_time, 0))
     np.save("mpc_data_replayed.npy", mpc_replay.mpc_node.mpc.mpc_data)
+    np.save("expected_x0s.npy",expected_x1s)
+    save_hpp_traj(bag_path)
 
 
 def compare_cost(cost_key, cost_dic, next_cost_dic):
@@ -160,3 +209,5 @@ def compare_constraint(constraint_key, constraint_dic, next_constraint_dic):
     dic[constraint_key] = constraint_dic[constraint_key][1:]
     dic["new " + constraint_key] = next_constraint_dic[constraint_key][:-1]
     plot_constraints_from_dic(dic)
+
+

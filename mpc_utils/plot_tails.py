@@ -46,10 +46,10 @@ def plot_tails(
     plot_data = extract_plot_data_from_sim_data(sim_data)
     pose = plot_data["lin_pos_ee_pred"][sim_data["N_sim"] - 1, 0, :]
     des_pose = plot_data["lin_pos_ee_ref"][sim_data["N_sim"] - 1, :]
-    print("final pose ", pose)
-    print("des pose ", des_pose)
-    print("diff", pose - des_pose)
-    print("norm", np.linalg.norm(pose - des_pose))
+    print("final end-effector pose ", pose)
+    print("desired end-effector pose ", des_pose)
+    print("difference end-effector pose ", pose - des_pose)
+    print("norm of the difference ", np.linalg.norm(pose - des_pose))
     plot_mpc_results(
         plot_data,
         which_plots=["x", "u", "ee"],
@@ -120,3 +120,13 @@ def get_sim_data(
 
         sim_data["state_mea_SIM_RATE"][mpc_cycle + 1, :] = mpc_xs[mpc_cycle + 1, 0, :]
     return sim_data, sim_params
+
+
+def get_lin_pos_ee_pred(
+    mpc_xs, mpc_us, model, mpc_config, ctrl_refs, state_refs, translation_refs
+):
+    sim_data, _ = get_sim_data(
+        mpc_xs, mpc_us, model, mpc_config, ctrl_refs, state_refs, translation_refs
+    )
+    plot_data = extract_plot_data_from_sim_data(sim_data)
+    return plot_data["lin_pos_ee_pred"]

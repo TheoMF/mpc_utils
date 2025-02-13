@@ -1,11 +1,11 @@
-bag_directory: "."
-bag_name: "rosbag_record_mpc_2024-11-22-09-08-53.bag"
+bag_directory: "/tmp/rosbag_mpc_data_0/"
+bag_name: "rosbag_mpc_data_0_0.db3"
 dt_ocp: 0.01
 mpc_freq: 100
-nb_running_nodes: 24
-endeff_name: "panda_hand_tcp"
+nb_running_nodes: 20
+endeff_name: "fer_link8"
 
 # optional parameter
 mpc_data_topic_name: "/ctrl_mpc_linearized/xu_solution"
-#T_sim: 12.5
+T_sim: 6
 mpc_solve_time_topic_name: "/ctrl_mpc_linearized/ocp_solve_time"
