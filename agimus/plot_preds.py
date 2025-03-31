@@ -7,7 +7,7 @@ import os
 import numpy as np
 import yaml
 import pickle
-from agimus_controller_examples.read_from_bag_trajectory import (
+from agimus_controller_examples.utils.read_from_bag_trajectory import (
     save_rosbag_outputs_to_pickle,
 )
 
@@ -18,7 +18,7 @@ from mpc_utils.plots_utils import (
 )
 from mpc_utils.plot_tails import plot_tails
 
-from agimus_controller_examples.visualization.plots import MPCPlots
+# from agimus_controller_examples.visualization.plots import MPCPlots
 from agimus_controller_examples.utils.set_models_and_mpc import get_panda_models
 
 
@@ -43,7 +43,7 @@ def get_nb_in_saturation_constraint(col_values, safety_margin, eps):
     return res
 
 
-robot_models = get_panda_models()
+robot_models = get_panda_models("agimus_demo_03_mpc_dummy_traj")
 rmodel = robot_models.robot_model
 cmodel = robot_models.collision_model
 vmodel = robot_models.visual_model
@@ -60,10 +60,11 @@ with open(picke_file_path, "rb") as pickle_file:
 
 mpc_xs = np.array(mpc_data["states_predictions"])
 mpc_us = np.array(mpc_data["control_predictions"])
-ctrl_refs = np.array(mpc_data["control_references"])
-state_refs = np.array(mpc_data["state_references"])
-translation_refs = np.array(mpc_data["ee_pose_references"])
-coll_distance_residuals = np.array(mpc_data["collision_distance_residuals"])
+ctrl_refs = np.array(mpc_data["control_reg_references"])
+state_refs = np.array(mpc_data["state_reg_references"])
+translation_refs = np.array(mpc_data["goal_tracking_references"])[:, :3]
+if "distance" in mpc_data.keys():
+    coll_distance_residuals = np.array(mpc_data["distance"])
 solve_time = np.array(mpc_data["solve_time"])
 
 
@@ -73,8 +74,8 @@ plot_mpc_iter_durations("MPC iterations duration", solve_time, time)
 print("solve time mean ", np.mean(solve_time))
 
 # PLOT COLLISIONS DISTANCE
-try:
-    coll_distance_residuals = coll_distance_residuals[:, 0, :]
+if "distance" in mpc_data.keys():
+    coll_distance_residuals = coll_distance_residuals[:, 0, np.newaxis]
     time_col = np.linspace(
         0,
         (coll_distance_residuals.shape[0] - 1) * 0.01,
@@ -86,13 +87,14 @@ try:
         coll_distance_residuals,
         time_col,
         coll_labels,
-        ylimits=[[0.01, 0.06]] * 9,
+        # ylimits=[[0.01, 0.06]] * 9,
     )
-except Exception:
-    warnings.warn("no collisions residuals or not it correct format")
+# except Exception:
+#    warnings.warn("no collisions residuals or not it correct format")
 
 
 # PLOT KKT / ITERATIONS
+
 try:
     kkt_norms = np.array(mpc_data["kkt_norms"])
     nb_iters = np.array(mpc_data["nb_iters"])
@@ -123,6 +125,7 @@ except KeyError:
 
 
 # MPC Plots for Meshcat viewer
+"""
 mpc_plots = MPCPlots(
     croco_xs=mpc_xs[:, 0, :],
     croco_us=mpc_us[:, 0, :],
@@ -135,7 +138,7 @@ mpc_plots = MPCPlots(
     ee_frame_name=mpc_config["endeff_name"],
     viewer=None,
 )
-
+"""
 # Plot predictions
 plot_tails(
     mpc_xs,
