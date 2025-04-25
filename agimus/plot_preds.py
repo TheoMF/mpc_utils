@@ -7,6 +7,9 @@ import os
 import numpy as np
 import yaml
 import pickle
+from pathlib import Path
+import xacro
+from ament_index_python import get_package_share_directory
 from agimus_controller_examples.utils.read_from_bag_trajectory import (
     save_rosbag_outputs_to_pickle,
 )
@@ -20,6 +23,7 @@ from mpc_utils.plot_tails import plot_tails
 
 # from agimus_controller_examples.visualization.plots import MPCPlots
 from agimus_controller_examples.utils.set_models_and_mpc import get_panda_models
+from agimus_controller.factory.robot_model import RobotModelParameters, RobotModels
 
 
 def get_time_per_iteration(nb_iters, step_times):
@@ -43,7 +47,24 @@ def get_nb_in_saturation_constraint(col_values, safety_margin, eps):
     return res
 
 
-robot_models = get_panda_models("agimus_demo_03_mpc_dummy_traj")
+# robot_models = get_panda_models("agimus_demo_03_mpc_dummy_traj")
+tiago_pro_pkg = Path(get_package_share_directory("tiago_pro_description"))
+tiago_pro_urdf_path = tiago_pro_pkg / "robots" / "tiago_pro.urdf.xacro"
+tiago_pro_urdf = xacro.process_file(tiago_pro_urdf_path).toxml()
+moving_joint_names = [
+    "arm_left_1_joint",
+    "arm_left_2_joint",
+    "arm_left_3_joint",
+    "arm_left_4_joint",
+    "arm_left_5_joint",
+    "arm_left_6_joint",
+    "arm_left_7_joint",
+]
+robot_models_params = RobotModelParameters(
+    robot_urdf=tiago_pro_urdf, moving_joint_names=moving_joint_names
+)
+robot_models = RobotModels(robot_models_params)
+
 rmodel = robot_models.robot_model
 cmodel = robot_models.collision_model
 vmodel = robot_models.visual_model
@@ -100,7 +121,7 @@ try:
     nb_iters = np.array(mpc_data["nb_iters"])
     nb_qp_iters = np.array(mpc_data["nb_qp_iters"])
     per_iter_avg_times = get_time_per_iteration(
-        nb_iters=nb_iters, step_times=solve_time
+        nb_iters=nb_iters, step_times=solve_time[: len(kkt_norms)]
     )
     # nb_saturated_cons = get_nb_in_saturation_constraint(col_values,safety_margin=0.02, eps=1e-3)
     concatenated_values = concatenate_array_with_list_of_arrays(
