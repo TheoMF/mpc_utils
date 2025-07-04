@@ -1,7 +1,6 @@
 import os
 import numpy as np
 import yaml
-import warnings
 
 import os
 import numpy as np
@@ -44,7 +43,15 @@ with open(picke_file_path, "rb") as pickle_file:
     mpc_data = pickle.load(pickle_file)
 
 if mpc_config["robot_name"] == "panda":
-    robot_models = get_panda_models("agimus_demo_03_mpc_dummy_traj")
+    config_folder_path = (
+        Path(get_package_share_directory("agimus_demo_03_mpc_dummy_traj")) / "config"
+    )
+    env_xacro_path = (
+        Path(get_package_share_directory("agimus_demo_05_pick_and_place"))
+        / "urdf"
+        / "environment.urdf.xacro"
+    )
+    robot_models = get_panda_models(config_folder_path, env_xacro_path)
 elif mpc_config["robot_name"] == "tiago_pro":
     tiago_pro_pkg = Path(get_package_share_directory("tiago_pro_description"))
     tiago_pro_urdf_path = tiago_pro_pkg / "robots" / "tiago_pro.urdf.xacro"
@@ -69,7 +76,7 @@ rmodel = robot_models.robot_model
 
 which_plots = [
     "computation_time",
-    # "collision_distance",
+    "collision_distance",
     "iter",
     "visual_servoing",
     "predictions",
